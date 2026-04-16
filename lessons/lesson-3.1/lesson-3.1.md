@@ -1,4 +1,4 @@
-# Lesson 7.1 — Securing the Kubelet in Kubernetes
+# Lesson 3.1 — Securing the Kubelet in Kubernetes
 
 > From the [Certified Kubernetes Security Specialist (CKS) Video Course](https://www.pearsonitcertification.com/store/certified-kubernetes-security-specialist-cks-video-9780138296476)
 

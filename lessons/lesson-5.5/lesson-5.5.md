@@ -1,4 +1,4 @@
-# Lesson 10.5 — Kubernetes API Access Verification
+# Lesson 5.5 — Kubernetes API Access Verification
 
 > From the [Certified Kubernetes Security Specialist (CKS) Video Course](https://www.pearsonitcertification.com/store/certified-kubernetes-security-specialist-cks-video-9780138296476)
 

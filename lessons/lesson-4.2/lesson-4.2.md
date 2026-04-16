@@ -1,152 +1,278 @@
-# Lesson 4.2 — Applying Kubernetes Network Policies with Cilium
+# Lesson 4.2 — Installing Metrics Server and Kubernetes Dashboard with RBAC
 
 > From the [Certified Kubernetes Security Specialist (CKS) Video Course](https://www.pearsonitcertification.com/store/certified-kubernetes-security-specialist-cks-video-9780138296476)
 
 ## Objective
-
-Understand how to implement and test Kubernetes Network Policies using Cilium as the network plugin. This lesson demonstrates setting up a Minikube cluster with Cilium, deploying network-connected services, and verifying connectivity restrictions using Network Policy rules.
+Deploy Metrics Server to enable resource monitoring, and install Kubernetes Dashboard with multiple service accounts configured with different RBAC roles (admin and read-only access).
 
 ## Prerequisites
-
-- Minikube installed and running
-- `kubectl` command-line tool configured
-- `cilium` CLI installed
-- Docker or compatible container runtime
-- Basic understanding of Kubernetes networking concepts
+- A running Kubernetes cluster
+- `helm` CLI installed and configured
+- `kubectl` access to your cluster
 
 ## Steps
 
-### Step 1: Start Minikube Cluster with Two Nodes
+### Step 1: Install Metrics Server via Helm
 
-Start a Minikube cluster with two nodes using Kubernetes v1.29.4:
-
-```bash
-minikube start --nodes 2 --kubernetes-version=v1.29.4
-```
-
-This creates a multi-node Minikube cluster suitable for testing network policies across nodes.
-
-### Step 2: Enable Ingress-DNS Addon
-
-Enable the ingress-DNS addon for Minikube:
+Add the Metrics Server Helm repository:
 
 ```bash
-minikube addons enable ingress-dns
+helm repo add metrics-server https://kubernetes-sigs.github.io/metrics-server/
 ```
 
-This addon enables DNS resolution for Ingress resources within the cluster.
-
-### Step 3: Check Initial Cilium Status
-
-Check the status of Cilium in the cluster (it may not be installed yet):
+Search for available Metrics Server versions:
 
 ```bash
-cilium status
+helms search repo metrics-server
 ```
 
-### Step 4: Install Cilium
-
-Install Cilium as the Container Networking Interface (CNI) plugin:
+Review the Helm chart values for version 3.12.1:
 
 ```bash
-cilium install
+helm show values metrics-server/metrics-server --version 3.12.1
 ```
 
-Cilium provides advanced networking capabilities including Network Policy enforcement and observability.
-
-### Step 5: Enable Cilium Hubble
-
-Enable Cilium Hubble for network visibility and flow monitoring:
+Create a dedicated namespace for Metrics Server:
 
 ```bash
-cilium hubble enable
+kubectl create ns metrics
 ```
 
-Hubble provides real-time insight into network communication between services.
-
-### Step 6: Verify Cilium Installation
-
-Wait for Cilium to be fully ready and check its status:
+Install Metrics Server using Helm (with a custom values file):
 
 ```bash
-cilium status --wait
+helm upgrade --install metrics-server metrics-server/metrics-server --namespace metrics -f values.yaml
 ```
 
-The `--wait` flag ensures the command waits until Cilium is fully operational.
+### Step 2: Verify Metrics Server Installation
 
-### Step 7: Port Forward for Hubble
-
-Set up port forwarding to access the Hubble UI (runs in background):
+Check metrics for pods in your cluster:
 
 ```bash
-cilium hubble port-forward&
+kubectl top pods
 ```
 
-This enables access to Hubble's web interface for observing network flows.
-
-### Step 8: Check Hubble Status
-
-Verify that Hubble is operational:
+Check metrics for nodes in your cluster:
 
 ```bash
-hubble status
+kubectl top nodes
 ```
 
-### Step 9: Deploy nginx Web Server
+### Step 3: Install Kubernetes Dashboard via Helm
 
-Deploy an nginx pod with the `app=web` label and expose it as a service:
+Add the Kubernetes Dashboard Helm repository:
 
 ```bash
-kubectl run web --image=nginx --labels="app=web" --expose --port=80
+helm repo add kubernetes-dashboard https://kubernetes.github.io/dashboard/
 ```
 
-This creates:
-- A pod named `web` running nginx
-- A service named `web` exposing port 80
-- Labels for Network Policy targeting
-
-### Step 10: Test Connectivity with Alpine Pod
-
-Launch an interactive Alpine pod and test connectivity to the nginx service:
+Search for available Kubernetes Dashboard versions:
 
 ```bash
-kubectl run --rm -i -t --image=alpine test-$RANDOM -- sh
+helm search repo kubernetes-dashboard
 ```
 
-Once inside the Alpine pod shell, test connectivity to the nginx web service:
+Export the default values to a file for customization:
 
 ```bash
-wget -qO- --timeout=2 http://web
+helm show values kubernetes-dashboard/kubernetes-dashboard > dashboard_values.yaml
 ```
 
-This command attempts to download content from the nginx service using HTTP. A successful response indicates connectivity is allowed.
+Edit the dashboard values as needed:
+
+```bash
+nano dashboard_values.yaml
+```
+
+Install Kubernetes Dashboard using Helm:
+
+```bash
+helm upgrade --install kubernetes-dashboard kubernetes-dashboard/kubernetes-dashboard --create-namespace --namespace kubernetes-dashboard -f dashboard_values.yaml
+```
+
+### Step 4: Access the Dashboard
+
+Create a port-forward tunnel to access the dashboard:
+
+```bash
+kubectl -n kubernetes-dashboard port-forward svc/kubernetes-dashboard-kong-proxy 8443:443
+```
+
+Open the dashboard in your browser:
+
+```
+https://localhost:8443
+```
+
+### Step 5: Create Admin User for Dashboard Access
+
+Create a service account for dashboard admin access:
+
+```bash
+cat <<EOF | k apply -f -
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: admin-user
+  namespace: kubernetes-dashboard
+EOF
+```
+
+Create a ClusterRoleBinding to grant admin privileges to the service account:
+
+```bash
+cat <<EOF | k apply -f -
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: admin-user
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-admin
+subjects:
+- kind: ServiceAccount
+  name: admin-user
+  namespace: kubernetes-dashboard
+EOF
+```
+
+Generate a token for the admin user:
+
+```bash
+kubectl -n kubernetes-dashboard create token admin-user
+```
+
+**Log in to the dashboard** using the token generated above.
+
+**Note:** The older method to retrieve the token was:
+```bash
+#kubectl get secret admin-user -n kubernetes-dashboard -o jsonpath={".data.token"} | base64 -d
+```
+
+### Step 6: Create Read-Only User for Dashboard Access
+
+Create a Role with read-only permissions for pods, services, and related resources:
+
+```bash
+cat <<EOF | kubectl apply -f -
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  namespace: kubernetes-dashboard
+  name: dashboard-read-only-role
+rules:
+- apiGroups: [""]
+  resources: ["pods", "services", "configmaps", "secrets", "deployments", "replicasets", "pods/log"]
+  verbs: ["get", "list", "watch"]
+EOF
+```
+
+Create a service account for the read-only user:
+
+```bash
+cat <<EOF | kubectl apply -f -
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: dashboard-read-only-sa
+EOF
+```
+
+Bind the read-only role to the service account:
+
+```bash
+cat <<EOF | kubectl apply -f -
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: dashboard-read-only-role-binding
+  namespace: kubernetes-dashboard
+subjects:
+- kind: ServiceAccount
+  name: dashboard-read-only-sa
+  apiGroup: ""
+roleRef:
+  kind: Role
+  name: dashboard-read-only-role
+  apiGroup: ""
+EOF
+```
+
+Generate a token for the read-only user:
+
+```bash
+kubectl get secret $(kubectl get serviceaccount dashboard-read-only-sa -o jsonpath="{.secrets[0].name}") -o jsonpath="{.data.token}" | base64 --decode
+```
+
+### Step 7: Create Admin User with Namespace-Level Permissions
+
+Create a service account for namespace-level admin access:
+
+```bash
+cat <<EOF | kubectl apply -f -
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: dashboard-admin
+  namespace: kubernetes-dashboard
+EOF
+```
+
+Create a RoleBinding to grant admin role permissions within the kubernetes-dashboard namespace:
+
+```bash
+cat <<EOF | kubectl apply -f -
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: dashboard-admin-binding
+  namespace: kubernetes-dashboard
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: admin
+subjects:
+- kind: ServiceAccount
+  name: dashboard-admin
+  namespace: kubernetes-dashboard
+EOF
+```
+
+Create a ClusterRoleBinding to allow the admin user to list namespaces:
+
+```bash
+cat <<EOF | kubectl apply -f -
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: dashboard-admin-list-namespace-binding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: list-namespace
+subjects:
+- kind: ServiceAccount
+  name: dashboard-admin
+  namespace: kubernetes-dashboard
+EOF
+```
 
 ## Verification
 
-After completing the steps above, you should observe:
-
-1. **Cilium Running**: `cilium status --wait` shows all Cilium components as operational
-2. **Hubble Operational**: `hubble status` indicates Hubble is ready
-3. **nginx Accessible**: The `wget` command from the Alpine pod returns the nginx default page (HTTP 200)
-4. **Network Flows Visible**: Cilium Hubble UI displays network flows between the Alpine test pod and nginx service
+- Confirm Metrics Server is collecting data: `kubectl top pods` and `kubectl top nodes` return resource metrics
+- Verify dashboard is accessible at `https://localhost:8443`
+- Test each service account token by logging in to the dashboard with admin, read-only, and namespace-admin credentials
+- Confirm that read-only user cannot modify resources
+- Confirm that namespace-admin user has appropriate permissions within the kubernetes-dashboard namespace
 
 ## Cleanup
 
-To clean up resources and stop the Minikube cluster:
+To remove the components deployed in this lesson:
 
 ```bash
-minikube delete
+helm uninstall kubernetes-dashboard --namespace kubernetes-dashboard
+helm uninstall metrics-server --namespace metrics
+kubectl delete namespace kubernetes-dashboard
+kubectl delete namespace metrics
 ```
-
-This removes the Minikube cluster and all deployed resources.
-
-### Network Policy Files Reference
-
-The following YAML files are available in this directory for defining and testing Network Policies:
-
-- `default_deny_all.yml` — Default deny Network Policy for blocking all ingress traffic
-- `deny-external-egress.yaml` — Egress policy for restricting outbound connections
-- `nginx-deployment.yaml` — Nginx deployment manifest
-- `redis-deployment.yaml` — Redis deployment manifest
-
-These files can be applied using `kubectl apply -f <filename>` to enforce specific network policies in your cluster.

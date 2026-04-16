@@ -1,209 +1,175 @@
-# Lesson 6.3 — TLS Encryption for Kubernetes Ingress with Self-Signed Certificates
+# Lesson 6.3 — Host Firewall Configuration
 
 > From the [Certified Kubernetes Security Specialist (CKS) Video Course](https://www.pearsonitcertification.com/store/certified-kubernetes-security-specialist-cks-video-9780138296476)
 
 ## Objective
-Secure Kubernetes Ingress traffic with TLS encryption using self-signed certificates in a Minikube cluster. This lesson covers two approaches: using Kubernetes CertificateSigningRequest (CSR) and creating self-signed certificates directly with OpenSSL.
+
+Configure UFW to ensure all necessary ports for Kubernetes communication, including those required by Cilium CNI, are open while maintaining security.
 
 ## Prerequisites
-- Minikube running with the Ingress addon enabled
-- kubectl configured to communicate with your Minikube cluster
-- openssl installed on your local machine
 
----
+- A Kubernetes cluster or second machine for connection testing
+- Administrative access to configure UFW
+- netstat utility for port inspection
 
-## Approach A: Kubernetes CertificateSigningRequest (CSR)
+## Steps
 
-This approach leverages Kubernetes' built-in CertificateSigningRequest API to generate and manage certificates through the cluster.
+### Step 1: Enable UFW
 
-### Step 1: Generate a private key and certificate signing request
-
-```bash
-openssl genrsa -out myapp.key 2048
-openssl req -new -key myapp.key -out myapp.csr -subj "/CN=myapp.com" -addext "subjectAltName=DNS:myapp.com"
-```
-
-### Step 2: Create a CertificateSigningRequest in Kubernetes
-
-Save the following manifest as `myapp-csr.yaml`:
-
-```yaml
-apiVersion: certificates.k8s.io/v1
-kind: CertificateSigningRequest
-metadata:
-  name: myapp-csr
-spec:
-  request: $(cat myapp.csr | base64 | tr -d '\n')
-  signerName: kubernetes.io/kube-apiserver-client
-  usages:
-  - digital signature
-  - key encipherment
-  - server auth
-```
-
-Apply the CSR:
+Enable UFW to start the firewall.
 
 ```bash
-kubectl apply -f myapp-csr.yaml
+sudo ufw enable
 ```
 
-### Step 3: Approve the certificate signing request
+### Step 2: Allow Outbound Communication
+
+Allow all outbound communication from the host.
 
 ```bash
-kubectl certificate approve myapp-csr
+sudo ufw default allow outgoing
 ```
 
-### Step 4: Extract the signed certificate
+### Step 3: Allow Essential Kubernetes Ports
+
+Allow the following ports required for Kubernetes communication:
+
+**API Server (TCP 6443)**
+```bash
+sudo ufw allow 6443/tcp
+```
+
+**etcd server client API (TCP 2379-2380)**
+```bash
+sudo ufw allow 2379:2380/tcp
+```
+
+**Kubelet API (TCP 10250)**
+```bash
+sudo ufw allow 10250/tcp
+```
+
+**NodePort Services (TCP 30000-32767)**
+```bash
+sudo ufw allow 30000:32767/tcp
+```
+
+### Step 4: Allow Cilium CNI Ports
+
+Allow the following ports for Cilium communication:
+
+**Cilium Hubble Relay (TCP 4245)**
+```bash
+sudo ufw allow 4245/tcp
+```
+
+**Cilium Hubble UI (TCP 12000)**
+```bash
+sudo ufw allow 12000/tcp
+```
+
+**Cilium API (TCP 9091)**
+```bash
+sudo ufw allow 9091/tcp
+```
+
+### Step 5: Review Firewall Rules
+
+List the current UFW rules to confirm the configuration.
 
 ```bash
-kubectl get csr myapp-csr -o jsonpath='{.status.certificate}' | base64 -d > myapp.crt
+sudo ufw status verbose
 ```
 
-### Step 5: Create a TLS Secret
+Example output:
+```
+Status: active
+Logging: on (low)
+Default: deny (incoming), allow (outgoing), disabled (routed)
+New profiles: skip
+
+To                         Action      From
+--                         ------      ----
+22/tcp                     ALLOW IN    192.168.1.0/24
+80/tcp                     ALLOW IN    Anywhere
+443/tcp                    ALLOW IN    Anywhere
+6443/tcp                   ALLOW IN    Anywhere
+2379:2380/tcp              ALLOW IN    Anywhere
+10250/tcp                  ALLOW IN    Anywhere
+30000:32767/tcp            ALLOW IN    Anywhere
+4245/tcp                   ALLOW IN    Anywhere
+12000/tcp                  ALLOW IN    Anywhere
+9091/tcp                   ALLOW IN    Anywhere
+```
+
+### Step 6: Check Open Ports
+
+Use `netstat` to view open ports and the processes using them.
 
 ```bash
-kubectl create secret tls myapp-tls --cert=myapp.crt --key=myapp.key
+netstat -tuln
 ```
 
----
+Example output:
+```
+Active Internet connections (only servers)
+Proto Recv-Q Send-Q Local Address           Foreign Address         State
+tcp        0      0 0.0.0.0:22              0.0.0.0:*               LISTEN
+tcp6       0      0 :::6443                 :::*                    LISTEN
+tcp6       0      0 :::2379                 :::*                    LISTEN
+tcp6       0      0 :::2380                 :::*                    LISTEN
+tcp6       0      0 :::10250                :::*                    LISTEN
+tcp6       0      0 :::4245                 :::*                    LISTEN
+tcp6       0      0 :::12000                :::*                    LISTEN
+tcp6       0      0 :::9091                 :::*                    LISTEN
+```
 
-## Approach B: Self-Signed Certificate with OpenSSL
+### Step 7: Test Specific Rules
 
-This is the recommended approach for testing and development. It uses OpenSSL to directly generate a self-signed certificate without relying on Kubernetes CSR.
-
-### Step 1: Generate a self-signed certificate
-
-Use OpenSSL to create a self-signed certificate for your Ingress host:
+Attempt connections to verify the firewall rules. For example, try to connect to the Kubernetes API server from a node:
 
 ```bash
-openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout tls.key -out tls.crt -subj "/CN=myapp.com"
+curl https://<HOST_IP_ADDRESS>:6443 --insecure
 ```
 
-This command generates a private key (`tls.key`) and a self-signed certificate (`tls.crt`) valid for 365 days, with the common name (CN) set to `myapp.com`.
+Ensure connections to other ports are successful as required.
 
-### Step 2: Create a TLS Secret
+### Step 8: Enable UFW Logging
 
-Create a Kubernetes Secret to store the TLS certificate and key:
+Enable UFW logging to monitor allowed and denied requests:
 
 ```bash
-kubectl create secret tls myapp-tls --key tls.key --cert tls.crt
+sudo ufw logging on
 ```
 
-This creates a Secret named `myapp-tls` using the generated key and certificate files.
-
-### Step 3: Configure the Ingress to use TLS
-
-Update your Ingress resource to use the TLS Secret and enable HTTPS. Save the following as `ingress-tls.yaml`:
-
-```yaml
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: example-ingress-tls
-  annotations:
-    nginx.ingress.kubernetes.io/rewrite-target: /$1
-spec:
-  ingressClassName: nginx
-  tls:
-  - hosts:
-    - myapp.com
-    secretName: myapp-tls
-  rules:
-  - host: myapp.com
-    http:
-      paths:
-      - path: /app1
-        pathType: Prefix
-        backend:
-          service:
-            name: app1-svc
-            port:
-              number: 80
-      - path: /app2
-        pathType: Prefix
-        backend:
-          service:
-            name: app2-svc
-            port:
-              number: 80
-```
-
-The `tls` section specifies the host to secure with TLS and references the Secret containing the certificate.
-
-Apply the updated Ingress manifest:
+View the logs:
 
 ```bash
-kubectl apply -f ingress-tls.yaml
+sudo tail -f /var/log/ufw.log
 ```
 
-### Step 4: Test the TLS encryption
-
-Get the Minikube IP:
-
-```bash
-minikube ip
+Example output:
 ```
-
-Update your `/etc/hosts` file to map the hostname to the Minikube IP (replace `MINIKUBE_IP` with the actual IP):
-
+Jul 26 12:00:00 ubuntu kernel: [UFW ALLOW] IN=eth0 OUT= MAC=00:0c:29:6d:8e:3a SRC=192.168.1.20 DST=192.168.1.10 LEN=60 TOS=0x00 PREC=0x00 TTL=64 ID=54321 DF PROTO=TCP SPT=12345 DPT=6443 WINDOW=65535 RES=0x00 SYN URGP=0
 ```
-MINIKUBE_IP myapp.com
-```
-
-Test the HTTPS connection using curl with the `--insecure` flag (required for self-signed certificates):
-
-```bash
-curl --insecure -H "Host: myapp.com" https://127.0.0.1/app1
-curl --insecure -H "Host: myapp.com" https://127.0.0.1/app2
-curl --insecure -v -H "Host: myapp.com" https://127.0.0.1/app2
-```
-
-The `--insecure` flag tells curl to ignore certificate validation errors. You can also open `https://myapp.com/app1` and `https://myapp.com/app2` in your web browser. You'll see a warning about the self-signed certificate, but you can proceed to the site.
-
----
 
 ## Verification
 
-### Step 1: Verify the TLS configuration
-
-Confirm that TLS is configured correctly for the Ingress by describing the resource:
-
-```bash
-kubectl describe ingress example-ingress
-```
-
-In the 'TLS' section, you should see the Secret name and the host it applies to.
-
-### Step 2: Check the Ingress controller logs
-
-Check the Ingress controller logs for any TLS-related errors:
-
-```bash
-kubectl logs -n ingress-nginx <ingress-controller-pod-name>
-```
-
-If everything is set up correctly, you should be able to access your applications over HTTPS using the specified host, with the traffic encrypted using the provided TLS certificate.
-
----
+- Confirm UFW is active and all required ports are listed
+- Verify connections to Kubernetes API server succeed
+- Confirm firewall logs show allowed traffic for configured ports
+- Periodically audit firewall rules to ensure continued security compliance
 
 ## Cleanup
 
-To remove the resources created in this lesson:
+To reset UFW to default settings:
 
 ```bash
-kubectl delete ingress example-ingress-tls
-kubectl delete secret myapp-tls
+sudo ufw reset
 ```
 
-If using Approach A, also clean up the CSR:
+To disable UFW:
 
 ```bash
-kubectl delete csr myapp-csr
+sudo ufw disable
 ```
-
----
-
-## Notes
-
-- Using self-signed certificates is suitable for testing and development purposes.
-- For production environments, always use certificates from a trusted Certificate Authority (CA) and ensure proper validation and renewal.

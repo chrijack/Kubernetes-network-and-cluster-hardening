@@ -1,4 +1,4 @@
-# Lesson 10.4 — Hardening the Kubernetes API Server
+# Lesson 5.4 — Hardening the Kubernetes API Server
 
 > From the [Certified Kubernetes Security Specialist (CKS) Video Course](https://www.pearsonitcertification.com/store/certified-kubernetes-security-specialist-cks-video-9780138296476)
 

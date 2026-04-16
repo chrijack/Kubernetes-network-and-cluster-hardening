@@ -21,51 +21,51 @@ All lesson materials are located in the `lessons/` directory.
 
 | Lesson | Topic | Link |
 |--------|-------|------|
-| 4.2 | Applying Kubernetes Network Policies with Cilium | [lessons/lesson-4.2/lesson-4.2.md](lessons/lesson-4.2/lesson-4.2.md) |
-| 4.3 | Kubernetes Network Policies and Cilium | [lessons/lesson-4.3/lesson-4.3.md](lessons/lesson-4.3/lesson-4.3.md) |
+| 1.2 | Applying Kubernetes Network Policies with Cilium | [lessons/lesson-1.2/lesson-1.2.md](lessons/lesson-1.2/lesson-1.2.md) |
+| 1.3 | Kubernetes Network Policies and Cilium | [lessons/lesson-1.3/lesson-1.3.md](lessons/lesson-1.3/lesson-1.3.md) |
 
 ### Lesson 2: Properly Setup Ingress with TLS
 
 | Lesson | Topic | Link |
 |--------|-------|------|
-| 6.2 | Kubernetes Ingress with Cilium and Hubble Observability | [lessons/lesson-6.2/lesson-6.2.md](lessons/lesson-6.2/lesson-6.2.md) |
-| 6.3 | TLS Encryption for Kubernetes Ingress with Self-Signed Certificates | [lessons/lesson-6.3/lesson-6.3.md](lessons/lesson-6.3/lesson-6.3.md) |
-| 6.4 | Validating and Troubleshooting TLS Ingress Configuration | [lessons/lesson-6.4/lesson-6.4.md](lessons/lesson-6.4/lesson-6.4.md) |
+| 2.2 | Kubernetes Ingress with Cilium and Hubble Observability | [lessons/lesson-2.2/lesson-2.2.md](lessons/lesson-2.2/lesson-2.2.md) |
+| 2.3 | TLS Encryption for Kubernetes Ingress with Self-Signed Certificates | [lessons/lesson-2.3/lesson-2.3.md](lessons/lesson-2.3/lesson-2.3.md) |
+| 2.4 | Validating and Troubleshooting TLS Ingress Configuration | [lessons/lesson-2.4/lesson-2.4.md](lessons/lesson-2.4/lesson-2.4.md) |
 
 ### Lesson 3: Protect Node Metadata and Endpoints
 
 | Lesson | Topic | Link |
 |--------|-------|------|
-| 7.1 | Securing the Kubelet in Kubernetes | [lessons/lesson-7.1/lesson-7.1.md](lessons/lesson-7.1/lesson-7.1.md) |
-| 7.4 | Kubelet Security Verification and Hardening | [lessons/lesson-7.4/lesson-7.4.md](lessons/lesson-7.4/lesson-7.4.md) |
+| 3.1 | Securing the Kubelet in Kubernetes | [lessons/lesson-3.1/lesson-3.1.md](lessons/lesson-3.1/lesson-3.1.md) |
+| 3.4 | Kubelet Security Verification and Hardening | [lessons/lesson-3.4/lesson-3.4.md](lessons/lesson-3.4/lesson-3.4.md) |
 
 ### Lesson 4: Kubernetes Dashboard Security
 
 | Lesson | Topic | Link |
 |--------|-------|------|
-| 8.2 | Installing Metrics Server and Kubernetes Dashboard with RBAC | [lessons/lesson-8.2/lesson-8.2.md](lessons/lesson-8.2/lesson-8.2.md) |
+| 4.2 | Installing Metrics Server and Kubernetes Dashboard with RBAC | [lessons/lesson-4.2/lesson-4.2.md](lessons/lesson-4.2/lesson-4.2.md) |
 
 ### Lesson 5: Restrict Access to Kubernetes API
 
 | Lesson | Topic | Link |
 |--------|-------|------|
-| 10.3 | Restricting Access to Kubernetes API | [lessons/lesson-10.3/lesson-10.3.md](lessons/lesson-10.3/lesson-10.3.md) |
-| 10.4 | Hardening the Kubernetes API Server | [lessons/lesson-10.4/lesson-10.4.md](lessons/lesson-10.4/lesson-10.4.md) |
-| 10.5 | Kubernetes API Access Verification | [lessons/lesson-10.5/lesson-10.5.md](lessons/lesson-10.5/lesson-10.5.md) |
+| 5.3 | Restricting Access to Kubernetes API | [lessons/lesson-5.3/lesson-5.3.md](lessons/lesson-5.3/lesson-5.3.md) |
+| 5.4 | Hardening the Kubernetes API Server | [lessons/lesson-5.4/lesson-5.4.md](lessons/lesson-5.4/lesson-5.4.md) |
+| 5.5 | Kubernetes API Access Verification | [lessons/lesson-5.5/lesson-5.5.md](lessons/lesson-5.5/lesson-5.5.md) |
 
 ### Lesson 6: Minimize External Access to the Network
 
 | Lesson | Topic | Link |
 |--------|-------|------|
-| 15.2 | Finding Open Ports | [lessons/lesson-15.2/lesson-15.2.md](lessons/lesson-15.2/lesson-15.2.md) |
-| 15.3 | Host Firewall Configuration | [lessons/lesson-15.3/lesson-15.3.md](lessons/lesson-15.3/lesson-15.3.md) |
-| 15.4 | Pod Security Verification and Validation | [lessons/lesson-15.4/lesson-15.4.md](lessons/lesson-15.4/lesson-15.4.md) |
+| 6.2 | Finding Open Ports | [lessons/lesson-6.2/lesson-6.2.md](lessons/lesson-6.2/lesson-6.2.md) |
+| 6.3 | Host Firewall Configuration | [lessons/lesson-6.3/lesson-6.3.md](lessons/lesson-6.3/lesson-6.3.md) |
+| 6.4 | Pod Security Verification and Validation | [lessons/lesson-6.4/lesson-6.4.md](lessons/lesson-6.4/lesson-6.4.md) |
 
 ### Lesson 7: Verify Platform Binaries Before Deploying
 
 | Lesson | Topic | Link |
 |--------|-------|------|
-| 9.2 | Verifying Kubernetes Binary Integrity | [lessons/lesson-9.2/lesson-9.2.md](lessons/lesson-9.2/lesson-9.2.md) |
+| 7.2 | Verifying Kubernetes Binary Integrity | [lessons/lesson-7.2/lesson-7.2.md](lessons/lesson-7.2/lesson-7.2.md) |
 
 ---
 
@@ -86,21 +86,21 @@ All lesson materials are located in the `lessons/` directory.
 ├── README.md
 ├── .gitignore
 ├── lessons/
+│   ├── lesson-1.2/
+│   ├── lesson-1.3/
+│   ├── lesson-2.2/
+│   ├── lesson-2.3/
+│   ├── lesson-2.4/
+│   ├── lesson-3.1/
+│   ├── lesson-3.4/
 │   ├── lesson-4.2/
-│   ├── lesson-4.3/
+│   ├── lesson-5.3/
+│   ├── lesson-5.4/
+│   ├── lesson-5.5/
 │   ├── lesson-6.2/
 │   ├── lesson-6.3/
 │   ├── lesson-6.4/
-│   ├── lesson-7.1/
-│   ├── lesson-7.4/
-│   ├── lesson-8.2/
-│   ├── lesson-10.3/
-│   ├── lesson-10.4/
-│   ├── lesson-10.5/
-│   ├── lesson-15.2/
-│   ├── lesson-15.3/
-│   ├── lesson-15.4/
-│   └── lesson-9.2/
+│   └── lesson-7.2/
 ```
 
 ---

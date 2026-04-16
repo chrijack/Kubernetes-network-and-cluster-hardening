@@ -1,0 +1,16 @@
+# File: frontend-ingress-allow-any.yaml
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: frontend-ingress-allow-any
+  namespace: open-app
+spec:
+  podSelector:
+    matchLabels:
+      component: frontend
+  policyTypes:
+  - Ingress
+  ingress:
+  - ports:
+    - protocol: TCP
+      port: 80

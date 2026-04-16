@@ -1,0 +1,37 @@
+# File: frontend-deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  namespace: open-app
+spec:
+  selector:
+    matchLabels:
+      component: frontend
+  replicas: 2
+  template:
+    metadata:
+      labels:
+        component: frontend
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:latest
+        command: ["/bin/bash", "-c"]
+        args: ["apt-get update && apt-get install -y postgresql-client && nginx -g 'daemon off;'"]
+        ports:
+        - containerPort: 80
+
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend-service
+  namespace: open-app
+spec:
+  ports:
+  - port: 80
+    protocol: TCP
+  selector:
+    component: frontend

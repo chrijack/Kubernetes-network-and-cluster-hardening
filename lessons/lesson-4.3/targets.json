@@ -1,0 +1,20 @@
+[
+  {
+    "Namespace": "open-app",
+    "matchLabels": {
+      "component": "frontend"
+    }
+  },
+  {
+    "Namespace": "open-app",
+    "matchLabels": {
+      "component": "backend"
+    }
+  },
+  {
+    "Namespace": "open-app",
+    "matLabels": {
+      "component": "database"
+    }
+  }
+]
